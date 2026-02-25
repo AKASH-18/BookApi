@@ -1,15 +1,29 @@
 const Book = require('../models/Book');
 
-/* GET ALL BOOKS */
+/* =========================
+   GET ALL BOOKS
+   GET /api/books
+========================= */
 exports.getBooks = async (req, res) => {
   try {
     const books = await Book.find();
 
+    // Format response to show bookId as id
+    const formattedBooks = books.map(book => ({
+      id: book.bookId,
+      title: book.title,
+      author: book.author,
+      genre: book.genre,
+      price: book.price,
+      inStock: book.inStock
+    }));
+
     res.status(200).json({
       success: true,
-      count: books.length,
-      data: books
+      count: formattedBooks.length,
+      data: formattedBooks
     });
+
   } catch (error) {
     console.error("GET BOOKS ERROR:", error);
     res.status(500).json({
@@ -19,10 +33,16 @@ exports.getBooks = async (req, res) => {
   }
 };
 
-/* GET BOOK BY ID */
+
+/* =========================
+   GET BOOK BY ID
+   GET /api/books/:id
+========================= */
 exports.getBookById = async (req, res) => {
   try {
-    const book = await Book.findById(req.params.id);
+
+    // IMPORTANT: search using bookId NOT _id
+    const book = await Book.findOne({ bookId: req.params.id });
 
     if (!book) {
       return res.status(404).json({
@@ -33,7 +53,14 @@ exports.getBookById = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      data: book
+      data: {
+        id: book.bookId,
+        title: book.title,
+        author: book.author,
+        genre: book.genre,
+        price: book.price,
+        inStock: book.inStock
+      }
     });
 
   } catch (error) {
@@ -45,30 +72,66 @@ exports.getBookById = async (req, res) => {
   }
 };
 
-/* CREATE BOOK */
+
+/* =========================
+   CREATE BOOK
+   POST /api/books
+========================= */
 exports.createBook = async (req, res) => {
   try {
-    const book = await Book.create(req.body);
 
+    const { title, author, genre, price, inStock } = req.body;
+
+    // basic validation
+    if (!title || !author || price === undefined) {
+      return res.status(400).json({
+        success: false,
+        message: "Please provide title, author and price"
+      });
+    }
+
+    const book = await Book.create({
+      title,
+      author,
+      genre,
+      price,
+      inStock
+    });
+
+    // return bookId
     res.status(201).json({
       success: true,
-      data: book
+      message: "Book created successfully",
+      data: {
+        id: book.bookId,
+        title: book.title,
+        author: book.author,
+        genre: book.genre,
+        price: book.price,
+        inStock: book.inStock
+      }
     });
 
   } catch (error) {
     console.error("CREATE BOOK ERROR:", error);
-    res.status(400).json({
+    res.status(500).json({
       success: false,
       message: error.message
     });
   }
 };
 
-/* UPDATE BOOK */
+
+/* =========================
+   UPDATE BOOK
+   PUT /api/books/:id
+========================= */
 exports.updateBook = async (req, res) => {
   try {
-    const book = await Book.findByIdAndUpdate(
-      req.params.id,
+
+    // update using bookId
+    const book = await Book.findOneAndUpdate(
+      { bookId: req.params.id },
       req.body,
       { new: true }
     );
@@ -82,7 +145,15 @@ exports.updateBook = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      data: book
+      message: "Book updated successfully",
+      data: {
+        id: book.bookId,
+        title: book.title,
+        author: book.author,
+        genre: book.genre,
+        price: book.price,
+        inStock: book.inStock
+      }
     });
 
   } catch (error) {
@@ -94,10 +165,16 @@ exports.updateBook = async (req, res) => {
   }
 };
 
-/* DELETE BOOK */
+
+/* =========================
+   DELETE BOOK
+   DELETE /api/books/:id
+========================= */
 exports.deleteBook = async (req, res) => {
   try {
-    const book = await Book.findByIdAndDelete(req.params.id);
+
+    // delete using bookId
+    const book = await Book.findOneAndDelete({ bookId: req.params.id });
 
     if (!book) {
       return res.status(404).json({
