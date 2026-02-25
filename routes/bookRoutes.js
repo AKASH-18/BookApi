@@ -9,24 +9,16 @@ const {
   deleteBook,
 } = require("../controllers/bookController");
 
+const { protect } = require("../middleware/authMiddleware");
+const { bookValidationRules, validate } = require("../middleware/validateBook");
 
-/* =========================
-   BOOK ROUTES
-========================= */
-
-// Get all books
+/* PUBLIC ROUTES */
 router.get("/", getBooks);
-
-// Get single book by bookId
 router.get("/:id", getBookById);
 
-// Create new book
-router.post("/", createBook);
-
-// Update book
-router.put("/:id", updateBook);
-
-// Delete book
-router.delete("/:id", deleteBook);
+/* PROTECTED ROUTES */
+router.post("/", protect, bookValidationRules, validate, createBook);
+router.put("/:id", protect, bookValidationRules, validate, updateBook);
+router.delete("/:id", protect, deleteBook);
 
 module.exports = router;
