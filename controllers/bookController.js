@@ -6,9 +6,8 @@ const Book = require('../models/Book');
 ========================= */
 exports.getBooks = async (req, res) => {
   try {
-    const books = await Book.find();
+    const books = await Book.find().sort({ bookId: 1 });
 
-    // Format response to show bookId as id
     const formattedBooks = books.map(book => ({
       id: book.bookId,
       title: book.title,
@@ -41,8 +40,10 @@ exports.getBooks = async (req, res) => {
 exports.getBookById = async (req, res) => {
   try {
 
-    // IMPORTANT: search using bookId NOT _id
-    const book = await Book.findOne({ bookId: req.params.id });
+    // Convert id to Number
+    const bookId = Number(req.params.id);
+
+    const book = await Book.findOne({ bookId });
 
     if (!book) {
       return res.status(404).json({
@@ -80,15 +81,18 @@ exports.getBookById = async (req, res) => {
 exports.createBook = async (req, res) => {
   try {
 
-    const { title, author, genre, price, inStock } = req.body;
+    let { title, author, genre, price, inStock } = req.body;
 
-    // basic validation
+    // validation
     if (!title || !author || price === undefined) {
       return res.status(400).json({
         success: false,
-        message: "Please provide title, author and price"
+        message: "Title, author and price are required"
       });
     }
+
+    // ensure price is number
+    price = Number(price);
 
     const book = await Book.create({
       title,
@@ -98,7 +102,6 @@ exports.createBook = async (req, res) => {
       inStock
     });
 
-    // return bookId
     res.status(201).json({
       success: true,
       message: "Book created successfully",
@@ -129,11 +132,17 @@ exports.createBook = async (req, res) => {
 exports.updateBook = async (req, res) => {
   try {
 
-    // update using bookId
+    const bookId = Number(req.params.id);
+
+    // Prevent changing bookId
+    if (req.body.bookId) {
+      delete req.body.bookId;
+    }
+
     const book = await Book.findOneAndUpdate(
-      { bookId: req.params.id },
+      { bookId },
       req.body,
-      { new: true }
+      { new: true, runValidators: true }
     );
 
     if (!book) {
@@ -173,8 +182,9 @@ exports.updateBook = async (req, res) => {
 exports.deleteBook = async (req, res) => {
   try {
 
-    // delete using bookId
-    const book = await Book.findOneAndDelete({ bookId: req.params.id });
+    const bookId = Number(req.params.id);
+
+    const book = await Book.findOneAndDelete({ bookId });
 
     if (!book) {
       return res.status(404).json({
