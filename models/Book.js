@@ -1,12 +1,7 @@
 const mongoose = require("mongoose");
-const Counter = require("./Counter");
 
 const bookSchema = new mongoose.Schema(
   {
-    bookId: {
-      type: Number,
-      unique: true,
-    },
     title: {
       type: String,
       required: true,
@@ -33,28 +28,10 @@ const bookSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-/* AUTO INCREMENT BOOK ID */
-bookSchema.pre("save", async function (next) {
-  try {
-    if (!this.isNew) return next();
-
-    const counter = await Counter.findOneAndUpdate(
-      { name: "bookId" },
-      { $inc: { seq: 1 } },
-      { new: true, upsert: true }
-    );
-
-    this.bookId = counter.seq;
-    next();
-  } catch (err) {
-    next(err);
-  }
-});
-
-/* IMPORTANT PART — THIS FIXES YOUR PROBLEM */
+/* Convert _id → id */
 bookSchema.set("toJSON", {
   transform: function (doc, ret) {
-    ret.id = ret.bookId || ret._id.toString();
+    ret.id = ret._id;
     delete ret._id;
     delete ret.__v;
     return ret;

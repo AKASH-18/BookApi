@@ -1,56 +1,34 @@
 const Book = require("../models/Book");
 
-/* =====================================
+/* =========================
    GET ALL BOOKS
-   GET /api/books
-===================================== */
+========================= */
 exports.getBooks = async (req, res) => {
   try {
-    const books = await Book.find().sort({ createdAt: -1 });
-
-    const formattedBooks = books.map((book) => ({
-      id: book.bookId || book._id.toString(),
-      title: book.title,
-      author: book.author,
-      genre: book.genre,
-      price: book.price,
-      inStock: book.inStock,
-      createdAt: book.createdAt,
-      updatedAt: book.updatedAt,
-    }));
+    const books = await Book.find();
 
     res.status(200).json({
       success: true,
-      count: formattedBooks.length,
-      data: formattedBooks,
+      count: books.length,
+      data: books,
     });
 
   } catch (error) {
-    console.error("GET BOOKS ERROR:", error);
+    console.error(error);
     res.status(500).json({
       success: false,
-      message: "Server error while fetching books",
+      message: "Server error",
     });
   }
 };
 
 
-/* =====================================
+/* =========================
    GET BOOK BY ID
-   GET /api/books/:id
-===================================== */
+========================= */
 exports.getBookById = async (req, res) => {
   try {
-    const id = Number(req.params.id);
-
-    if (isNaN(id)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid book ID",
-      });
-    }
-
-    const book = await Book.findOne({ bookId: id });
+    const book = await Book.findById(req.params.id);
 
     if (!book) {
       return res.status(404).json({
@@ -61,60 +39,35 @@ exports.getBookById = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      data: {
-        id: book.bookId,
-        title: book.title,
-        author: book.author,
-        genre: book.genre,
-        price: book.price,
-        inStock: book.inStock,
-        createdAt: book.createdAt,
-        updatedAt: book.updatedAt,
-      },
+      data: book,
     });
 
   } catch (error) {
-    console.error("GET BOOK BY ID ERROR:", error);
-    res.status(500).json({
+    res.status(400).json({
       success: false,
-      message: "Server error while fetching book",
+      message: "Invalid book ID",
     });
   }
 };
 
 
-/* =====================================
+/* =========================
    CREATE BOOK
-   POST /api/books
-===================================== */
+========================= */
 exports.createBook = async (req, res) => {
   try {
-    const { title, author, genre, price, inStock } = req.body;
-
     const book = await Book.create({
-      title,
-      author,
-      genre,
-      price,
-      inStock,
-      createdBy: req.user._id, // important
+      ...req.body,
+      createdBy: req.user._id,
     });
 
     res.status(201).json({
       success: true,
-      message: "Book created successfully",
-      data: {
-        id: book.bookId,
-        title: book.title,
-        author: book.author,
-        genre: book.genre,
-        price: book.price,
-        inStock: book.inStock,
-      },
+      data: book,
     });
 
   } catch (error) {
-    console.error("CREATE BOOK ERROR:", error);
+    console.error(error);
     res.status(500).json({
       success: false,
       message: "Server error while creating book",
@@ -123,25 +76,15 @@ exports.createBook = async (req, res) => {
 };
 
 
-/* =====================================
+/* =========================
    UPDATE BOOK
-   PUT /api/books/:id
-===================================== */
+========================= */
 exports.updateBook = async (req, res) => {
   try {
-    const id = Number(req.params.id);
-
-    if (isNaN(id)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid book ID",
-      });
-    }
-
-    const book = await Book.findOneAndUpdate(
-      { bookId: id },
+    const book = await Book.findByIdAndUpdate(
+      req.params.id,
       req.body,
-      { new: true, runValidators: true }
+      { new: true }
     );
 
     if (!book) {
@@ -153,43 +96,24 @@ exports.updateBook = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: "Book updated successfully",
-      data: {
-        id: book.bookId,
-        title: book.title,
-        author: book.author,
-        genre: book.genre,
-        price: book.price,
-        inStock: book.inStock,
-      },
+      data: book,
     });
 
   } catch (error) {
-    console.error("UPDATE BOOK ERROR:", error);
-    res.status(500).json({
+    res.status(400).json({
       success: false,
-      message: "Server error while updating book",
+      message: "Invalid book ID",
     });
   }
 };
 
 
-/* =====================================
+/* =========================
    DELETE BOOK
-   DELETE /api/books/:id
-===================================== */
+========================= */
 exports.deleteBook = async (req, res) => {
   try {
-    const id = Number(req.params.id);
-
-    if (isNaN(id)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid book ID",
-      });
-    }
-
-    const book = await Book.findOneAndDelete({ bookId: id });
+    const book = await Book.findByIdAndDelete(req.params.id);
 
     if (!book) {
       return res.status(404).json({
@@ -204,10 +128,9 @@ exports.deleteBook = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("DELETE BOOK ERROR:", error);
-    res.status(500).json({
+    res.status(400).json({
       success: false,
-      message: "Server error while deleting book",
+      message: "Invalid book ID",
     });
   }
 };
