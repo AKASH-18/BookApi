@@ -50,17 +50,21 @@ const bookSchema = new mongoose.Schema(
 /* ===============================
    AUTO-INCREMENT bookId
 ================================ */
-bookSchema.pre("save", async function () {
+bookSchema.pre("save", async function (next) {
+  try {
+    if (!this.isNew) return next();
 
-  // only generate id for new book
-  if (!this.isNew) return;
+    const counter = await Counter.findOneAndUpdate(
+      { name: "bookId" },
+      { $inc: { seq: 1 } },
+      { new: true, upsert: true }
+    );
 
-  const counter = await Counter.findOneAndUpdate(
-    { name: "bookId" },
-    { $inc: { seq: 1 } },
-    { new: true, upsert: true }
-  );
+    this.bookId = counter.seq;
 
-  this.bookId = counter.seq;
+    next();
+  } catch (error) {
+    next(error);
+  }
 });
 module.exports = mongoose.model("Book", bookSchema);
