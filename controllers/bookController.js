@@ -9,7 +9,7 @@ exports.getBooks = async (req, res) => {
     const books = await Book.find().sort({ bookId: 1 });
 
     const formattedBooks = books.map(book => ({
-      id: book.bookId,
+      id: book.bookId ? book.bookId : book._id.toString(), // fallback safety
       title: book.title,
       author: book.author,
       genre: book.genre,
@@ -39,8 +39,6 @@ exports.getBooks = async (req, res) => {
 ========================= */
 exports.getBookById = async (req, res) => {
   try {
-
-    // Convert id to Number
     const bookId = Number(req.params.id);
 
     const book = await Book.findOne({ bookId });
@@ -76,14 +74,12 @@ exports.getBookById = async (req, res) => {
 
 /* =========================
    CREATE BOOK
-   POST /api/books
 ========================= */
 exports.createBook = async (req, res) => {
   try {
 
     let { title, author, genre, price, inStock } = req.body;
 
-    // validation
     if (!title || !author || price === undefined) {
       return res.status(400).json({
         success: false,
@@ -91,7 +87,6 @@ exports.createBook = async (req, res) => {
       });
     }
 
-    // ensure price is number
     price = Number(price);
 
     const book = await Book.create({
@@ -127,14 +122,12 @@ exports.createBook = async (req, res) => {
 
 /* =========================
    UPDATE BOOK
-   PUT /api/books/:id
 ========================= */
 exports.updateBook = async (req, res) => {
   try {
 
     const bookId = Number(req.params.id);
 
-    // Prevent changing bookId
     if (req.body.bookId) {
       delete req.body.bookId;
     }
@@ -177,7 +170,6 @@ exports.updateBook = async (req, res) => {
 
 /* =========================
    DELETE BOOK
-   DELETE /api/books/:id
 ========================= */
 exports.deleteBook = async (req, res) => {
   try {
