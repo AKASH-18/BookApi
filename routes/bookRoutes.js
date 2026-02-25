@@ -9,11 +9,24 @@ const {
   deleteBook,
 } = require("../controllers/bookController");
 
-const { protect } = require("../middleware/authMiddleware");
-router.get("/:id", getBookById);
+
+/* =========================
+   BOOK ROUTES
+========================= */
+
+// Get all books
 router.get("/", getBooks);
-router.post("/", protect, createBook);
-router.put("/:id", protect, updateBook);
-router.delete("/:id", protect, deleteBook);
+
+// Get single book by bookId
+router.get("/:id", getBookById);
+
+// Create new book
+router.post("/", createBook);
+
+// Update book
+router.put("/:id", updateBook);
+
+// Delete book
+router.delete("/:id", deleteBook);
 
 module.exports = router;
