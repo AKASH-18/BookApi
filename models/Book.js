@@ -3,53 +3,37 @@ const Counter = require("./Counter");
 
 const bookSchema = new mongoose.Schema(
   {
-    // Auto Increment Book ID
     bookId: {
       type: Number,
       unique: true,
     },
-
     title: {
       type: String,
-      required: [true, "Title is required"],
-      trim: true,
+      required: true,
     },
-
     author: {
       type: String,
-      required: [true, "Author is required"],
-      trim: true,
+      required: true,
     },
-
-    genre: {
-      type: String,
-      trim: true,
-    },
-
+    genre: String,
     price: {
       type: Number,
-      required: [true, "Price is required"],
+      required: true,
     },
-
     inStock: {
       type: Boolean,
       default: true,
     },
-
-    // IMPORTANT: make OPTIONAL (not required)
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      default: null,
+      required: true,
     },
   },
   { timestamps: true }
 );
 
-
-/* ===============================
-   AUTO-INCREMENT bookId
-================================ */
+/* AUTO INCREMENT BOOK ID */
 bookSchema.pre("save", async function (next) {
   try {
     if (!this.isNew) return next();
@@ -61,10 +45,20 @@ bookSchema.pre("save", async function (next) {
     );
 
     this.bookId = counter.seq;
-
     next();
-  } catch (error) {
-    next(error);
+  } catch (err) {
+    next(err);
   }
 });
+
+/* IMPORTANT PART — THIS FIXES YOUR PROBLEM */
+bookSchema.set("toJSON", {
+  transform: function (doc, ret) {
+    ret.id = ret.bookId || ret._id.toString();
+    delete ret._id;
+    delete ret.__v;
+    return ret;
+  },
+});
+
 module.exports = mongoose.model("Book", bookSchema);
