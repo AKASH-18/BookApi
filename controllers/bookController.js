@@ -1,52 +1,51 @@
-const Book = require('../models/Book');
+const Book = require("../models/Book");
+const mongoose = require("mongoose");
 
-/* =========================
-   GET ALL BOOKS
-   GET /api/books
-========================= */
+/* GET ALL BOOKS */
 exports.getBooks = async (req, res) => {
   try {
-    const books = await Book.find().sort({ bookId: 1 });
+    const books = await Book.find().sort({ createdAt: -1 });
 
-    const formattedBooks = books.map(book => ({
-      id: book.bookId ? book.bookId : book._id.toString(), // fallback safety
+    const formatted = books.map(book => ({
+      id: book.bookId, // ← THIS FIXES YOUR PROBLEM
       title: book.title,
       author: book.author,
       genre: book.genre,
       price: book.price,
-      inStock: book.inStock
+      inStock: book.inStock,
     }));
 
     res.status(200).json({
       success: true,
-      count: formattedBooks.length,
-      data: formattedBooks
+      count: formatted.length,
+      data: formatted,
     });
 
   } catch (error) {
     console.error("GET BOOKS ERROR:", error);
-    res.status(500).json({
-      success: false,
-      message: 'Server Error'
-    });
+    res.status(500).json({ success: false, message: "Server Error" });
   }
 };
 
 
-/* =========================
-   GET BOOK BY ID
-   GET /api/books/:id
-========================= */
+/* GET BOOK BY ID (using bookId not _id) */
 exports.getBookById = async (req, res) => {
   try {
-    const bookId = Number(req.params.id);
+    const id = Number(req.params.id);
 
-    const book = await Book.findOne({ bookId });
+    if (isNaN(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid book id",
+      });
+    }
+
+    const book = await Book.findOne({ bookId: id });
 
     if (!book) {
       return res.status(404).json({
         success: false,
-        message: 'Book not found'
+        message: "Book not found",
       });
     }
 
@@ -58,43 +57,24 @@ exports.getBookById = async (req, res) => {
         author: book.author,
         genre: book.genre,
         price: book.price,
-        inStock: book.inStock
-      }
+        inStock: book.inStock,
+      },
     });
 
   } catch (error) {
-    console.error("GET BOOK BY ID ERROR:", error);
-    res.status(500).json({
-      success: false,
-      message: 'Server Error'
-    });
+    console.error(error);
+    res.status(500).json({ success: false, message: "Server Error" });
   }
 };
 
 
-/* =========================
-   CREATE BOOK
-========================= */
+/* CREATE BOOK */
 exports.createBook = async (req, res) => {
   try {
 
-    let { title, author, genre, price, inStock } = req.body;
-
-    if (!title || !author || price === undefined) {
-      return res.status(400).json({
-        success: false,
-        message: "Title, author and price are required"
-      });
-    }
-
-    price = Number(price);
-
     const book = await Book.create({
-      title,
-      author,
-      genre,
-      price,
-      inStock
+      ...req.body,
+      createdBy: req.user._id, // ← REQUIRED FIELD FIX
     });
 
     res.status(201).json({
@@ -106,95 +86,70 @@ exports.createBook = async (req, res) => {
         author: book.author,
         genre: book.genre,
         price: book.price,
-        inStock: book.inStock
-      }
+        inStock: book.inStock,
+      },
     });
 
   } catch (error) {
     console.error("CREATE BOOK ERROR:", error);
     res.status(500).json({
       success: false,
-      message: error.message
+      message: "Failed to create book",
     });
   }
 };
 
 
-/* =========================
-   UPDATE BOOK
-========================= */
+/* UPDATE BOOK */
 exports.updateBook = async (req, res) => {
   try {
-
-    const bookId = Number(req.params.id);
-
-    if (req.body.bookId) {
-      delete req.body.bookId;
-    }
+    const id = Number(req.params.id);
 
     const book = await Book.findOneAndUpdate(
-      { bookId },
+      { bookId: id },
       req.body,
-      { new: true, runValidators: true }
+      { new: true }
     );
 
     if (!book) {
       return res.status(404).json({
         success: false,
-        message: 'Book not found'
+        message: "Book not found",
       });
     }
 
     res.status(200).json({
       success: true,
       message: "Book updated successfully",
-      data: {
-        id: book.bookId,
-        title: book.title,
-        author: book.author,
-        genre: book.genre,
-        price: book.price,
-        inStock: book.inStock
-      }
+      data: book,
     });
 
   } catch (error) {
-    console.error("UPDATE BOOK ERROR:", error);
-    res.status(500).json({
-      success: false,
-      message: 'Server Error'
-    });
+    res.status(500).json({ success: false, message: "Server Error" });
   }
 };
 
 
-/* =========================
-   DELETE BOOK
-========================= */
+/* DELETE BOOK */
 exports.deleteBook = async (req, res) => {
   try {
+    const id = Number(req.params.id);
 
-    const bookId = Number(req.params.id);
-
-    const book = await Book.findOneAndDelete({ bookId });
+    const book = await Book.findOneAndDelete({ bookId: id });
 
     if (!book) {
       return res.status(404).json({
         success: false,
-        message: 'Book not found'
+        message: "Book not found",
       });
     }
 
     res.status(200).json({
       success: true,
-      message: 'Book deleted successfully'
+      message: "Book deleted successfully",
     });
 
   } catch (error) {
-    console.error("DELETE BOOK ERROR:", error);
-    res.status(500).json({
-      success: false,
-      message: 'Server Error'
-    });
+    res.status(500).json({ success: false, message: "Server Error" });
   }
 };
